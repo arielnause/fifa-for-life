@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FIFA for Life">
+  <meta name="theme-color" content="#1a7a3c">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>FIFA for Life</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{--green:#1a7a3c;--gl:#e8f5ed;--bg:#f2f2f7;--card:#fff;--border:rgba(0,0,0,0.1);--text:#1c1c1e;--muted:#6b6b6b;--sub:#f2f2f7}
+    @media(prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--border:rgba(255,255,255,0.12);--text:#fff;--muted:#8e8e93;--sub:#2c2c2e;--gl:#0d3320}}
+    html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden}
+    .app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto}
+    .header{background:var(--green);padding:calc(env(safe-area-inset-top)+16px) 16px 14px;flex-shrink:0}
+    .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+    .header h1{font-size:21px;font-weight:700;color:#fff;letter-spacing:-0.4px}
+    .header-sub{font-size:12px;color:rgba(255,255,255,0.75)}
+    .badge{background:rgba(255,255,255,0.22);font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;color:#fff}
+    .tabs{display:flex;background:var(--card);border-bottom:0.5px solid var(--border);flex-shrink:0}
+    .tab{flex:1;text-align:center;padding:8px 0;font-size:10px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;user-select:none}
+    .tab span{font-size:20px;display:block;margin-bottom:1px}
+    .tab.active{color:var(--green);border-bottom-color:var(--green)}
+    .content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
+    .card{background:var(--card);border-radius:14px;border:0.5px solid var(--border);padding:14px;margin-bottom:12px}
+    .card-title{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:12px}
+
+    /* TABLE */
+    .tbl{background:var(--card);border-radius:14px;border:0.5px solid var(--border);overflow:hidden;margin-bottom:10px}
+    .tbl-head,.tbl-row{display:grid;grid-template-columns:22px 1fr 30px 30px 30px 38px;gap:2px;padding:9px 12px;align-items:center}
+    .tbl-head{background:var(--sub);font-size:11px;font-weight:600;color:var(--muted)}
+    .tbl-row{border-top:0.5px solid var(--border)}
+    .tbl-row.gold{background:var(--gl)}
+    .pos{font-size:12px;font-weight:600;color:var(--muted)}
+    .pos.p1{color:var(--green)}.pos.last{color:#c0392b}
+    .st-name{display:flex;align-items:center;gap:7px;min-width:0}
+    .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+    .pname{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .num{font-size:12px;color:var(--muted);text-align:center}
+    .pts{font-size:14px;font-weight:700;color:var(--text);text-align:center}
+    .dots{display:flex;gap:3px;margin-top:2px}
+    .dot{width:7px;height:7px;border-radius:50%}
+    .dot.W{background:var(--green)}.dot.L{background:#c0392b}
+
+    /* RESULTS */
+    .rc{background:var(--card);border-radius:14px;border:0.5px solid var(--border);padding:13px 14px;margin-bottom:10px}
+    .rc-date{font-size:11px;color:var(--muted);margin-bottom:4px}
+    .rc-match{display:flex;align-items:center;gap:8px;margin-top:6px}
+    .rc-side{flex:1}
+    .rc-side.r{text-align:right}
+    .rc-tname{font-size:14px;font-weight:600;color:var(--text)}
+    .rc-center{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+    .wb{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
+    .wb.win{background:var(--gl);color:var(--green)}
+    .wb.loss{background:#fdedec;color:#c0392b}
+    .rc-vs{font-size:11px;color:var(--muted)}
+    .rc-tag{display:inline-block;font-size:10px;color:var(--muted);background:var(--sub);border-radius:8px;padding:2px 7px}
+    .session-champ{background:#fef3c7;border-radius:14px;border:0.5px solid #f0c040;padding:13px 14px;margin-bottom:10px;text-align:center}
+    .session-champ .crown{font-size:28px;display:block;margin-bottom:4px}
+    .session-champ .title{font-size:15px;font-weight:700;color:#854F0B}
+    .session-champ .sub{font-size:12px;color:#a07020;margin-top:2px}
+
+    /* DRAW */
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+    .pcheck{display:flex;align-items:center;gap:8px;background:var(--sub);border-radius:10px;padding:10px;cursor:pointer;border:2px solid transparent;user-select:none;transition:border-color .1s}
+    .pcheck.on{border-color:var(--green);background:var(--gl)}
+    .pcheck-name{font-size:14px;font-weight:500;color:var(--text)}
+    .sel-hint{font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px}
+    .tblock{border-radius:10px;padding:12px;margin-bottom:8px}
+    .tlabel{font-size:11px;font-weight:700;margin-bottom:8px}
+    .tduo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .tduo .tn{font-size:14px;font-weight:600;color:var(--text)}
+    .vs-line{text-align:center;font-size:13px;color:var(--muted);margin:4px 0;font-weight:700}
+    .wait-block{background:var(--sub);border-radius:10px;padding:11px 12px;margin-top:4px;border:0.5px solid var(--border)}
+    .wait-label{font-size:11px;color:#854F0B;font-weight:700;margin-bottom:6px}
+
+    /* session wins tracker */
+    .wins-tracker{display:flex;gap:8px;margin-bottom:14px}
+    .win-pip{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:var(--sub);display:flex;align-items:center;justify-content:center;font-size:14px}
+    .win-pip.filled{background:var(--green);border-color:var(--green)}
+
+    /* ADD */
+    .form{display:flex;flex-direction:column;gap:14px}
+    .fl{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px}
+    .fl small{font-size:11px;color:var(--muted);font-weight:400;margin-left:4px}
+    .win-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .wopt{background:var(--sub);border-radius:12px;padding:16px 10px;text-align:center;cursor:pointer;border:2px solid transparent;transition:border-color .15s,background .15s;user-select:none}
+    .wopt.on{border-color:var(--green);background:var(--gl)}
+    .wopt-tag{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:.5px}
+    .wopt-names{font-size:14px;font-weight:700;color:var(--text);line-height:1.6}
+    .wopt-wins{font-size:11px;color:var(--green);margin-top:4px;font-weight:600}
+    input[type=date]{background:var(--sub);border:0.5px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;padding:10px 12px;outline:none;-webkit-appearance:none;font-family:inherit;width:100%}
+    .info-box{border-radius:10px;padding:11px 13px;font-size:13px;font-weight:500;line-height:1.4}
+    .ig{background:var(--gl);color:var(--green)}
+    .ib{background:#e8f0fe;color:#1a56db}
+    .io{background:#fef3c7;color:#854F0B}
+    .ir{background:#fdedec;color:#c0392b}
+    .champ-banner{background:#fef3c7;border-radius:12px;padding:16px;text-align:center;border:1px solid #f0c040}
+    .champ-banner .crown{font-size:36px;display:block;margin-bottom:6px}
+    .champ-banner h2{font-size:18px;font-weight:700;color:#854F0B}
+    .champ-banner p{font-size:13px;color:#a07020;margin-top:4px}
+
+    /* partner pick */
+    .draw-pick-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .dopt{background:var(--sub);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;border:2px solid transparent;user-select:none;transition:border-color .1s}
+    .dopt.on{border-color:#854F0B;background:#fef3c7}
+    .dopt-name{font-size:15px;font-weight:700;color:var(--text)}
+    .dopt-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+    .btn{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .1s}
+    .btn:active{opacity:0.8}.btn:disabled{opacity:0.35;cursor:default}
+    .btn-ghost{background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;padding:6px 0;font-family:inherit;width:100%;text-align:center}
+    .saved{background:var(--gl);color:var(--green);border-radius:10px;padding:10px;text-align:center;font-size:14px;font-weight:600;display:none}
+    .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty p{font-size:15px;margin-top:8px}
+    .hint{font-size:11px;color:var(--muted);text-align:center;margin-top:8px}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <h1>⚽ FIFA for Life</h1>
+      <span class="badge" id="session-badge">Season 1</span>
+    </div>
+    <div class="header-sub" id="sub">7 players · 0 matches</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="go('standings')"><span>🏆</span>Table</div>
+    <div class="tab" onclick="go('draw')"><span>🔀</span>Draw</div>
+    <div class="tab" onclick="go('results')"><span>⚽</span>Results</div>
+    <div class="tab" onclick="go('add')"><span>➕</span>Add</div>
+  </div>
+  <div class="content">
+    <div id="standings"></div>
+    <div id="draw" style="display:none"></div>
+    <div id="results" style="display:none"></div>
+    <div id="add" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const KEY = 'fifaforlife_v7';
+const WINS_TO_CHAMP = 3;
+const PAL = [
+  {c:'#185FA5',b:'#dbeafe'},{c:'#534AB7',b:'#ede9fe'},{c:'#993C1D',b:'#fee2d5'},
+  {c:'#3B6D11',b:'#dcfce7'},{c:'#854F0B',b:'#fef3c7'},{c:'#993556',b:'#fce7f3'},
+  {c:'#0F6E56',b:'#d1fae5'}
+];
+const INIT_PLAYERS = [
+  {id:1,name:'Gay',...PAL[0]},{id:2,name:'Amos',...PAL[1]},{id:3,name:'Shalom',...PAL[2]},
+  {id:4,name:'Nissim',...PAL[3]},{id:5,name:'Idan',...PAL[4]},{id:6,name:'Ronen',...PAL[5]},
+  {id:7,name:'Yoav',...PAL[6]}
+];
+
+// Stored match: {id, tw1:[id,id], tw2:[id,id], winner:'t1'|'t2', date, gameNum, sessionId}
+let S = {players:INIT_PLAYERS, matches:[], nid:1, sessionCount:1};
+
+// Live session state (not persisted — reconstructed from context)
+// session = {
+//   id, date,
+//   teams: [[id,id],[id,id],[id,id]?],  // all drawn couples
+//   onCourt: [teamIdx, teamIdx],          // indices of teams currently playing
+//   waiting: teamIdx|null,               // team waiting (if 3 teams)
+//   wins: {teamKey: count},              // wins per team THIS session (teamKey = sorted ids joined)
+//   sitOuts: {playerId: count},          // how many games each player sat out this session
+// }
+let session = null;
+
+// UI state
+let tab = 'standings';
+let sel = new Set();        // draw screen selections
+let picked = null;          // 't1'|'t2' win pick
+let partnerPick = null;     // id chosen as partner for sitter (7-player flow)
+
+function load(){try{const r=localStorage.getItem(KEY);if(r)S=JSON.parse(r)}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function ini(n){return n.slice(0,2).toUpperCase()}
+function pById(id){return S.players.find(p=>p.id===id)}
+function av(p,sz=28,fs=11){return`<div class="av" style="width:${sz}px;height:${sz}px;font-size:${fs}px;background:${p.b};color:${p.c}">${ini(p.name)}</div>`}
+function teamLabel(ids){return ids.map(id=>{const p=pById(id);return p?p.name:'?'}).join(' & ')}
+function teamKey(ids){return [...ids].sort().join(',')}
+function pips(filled,total=WINS_TO_CHAMP){
+  let h='';
+  for(let i=0;i<total;i++) h+=`<div class="win-pip${i<filled?' filled':''}"></div>`;
+  return h;
+}
+
+// ── STANDINGS ──
+function calcStandings(){
+  const map={};
+  S.players.forEach(p=>{map[p.id]={...p,P:0,W:0,L:0,Pts:0,form:[]}});
+  [...S.matches].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id).forEach(m=>{
+    const winners=m.winner==='t1'?m.tw1:m.tw2;
+    const losers =m.winner==='t1'?m.tw2:m.tw1;
+    [...winners,...losers].forEach(id=>{if(map[id])map[id].P++});
+    winners.forEach(id=>{if(map[id]){map[id].W++;map[id].Pts++;map[id].form.push('W')}});
+    losers.forEach(id=>{if(map[id]){map[id].L++;map[id].form.push('L')}});
+  });
+  return Object.values(map).sort((a,b)=>b.Pts-a.Pts||b.W-a.W);
+}
+
+function renderStandings(){
+  const st=calcStandings();
+  if(!st.length) return`<div class="empty"><p>👥</p><p>No players yet</p></div>`;
+  const rows=st.map((p,i)=>{
+    const pc=i===0?'p1':i===st.length-1&&st.length>1?'last':'';
+    const form=p.form.slice(-5).map(f=>`<span class="dot ${f}"></span>`).join('');
+    return`<div class="tbl-row${i===0?' gold':''}">
+      <div class="pos ${pc}">${i+1}</div>
+      <div class="st-name">${av(p,26,10)}<div style="min-width:0"><div class="pname">${p.name}</div><div class="dots">${form}</div></div></div>
+      <div class="num">${p.P}</div><div class="num">${p.W}</div><div class="num">${p.L}</div>
+      <div class="pts">${p.Pts}</div>
+    </div>`;
+  }).join('');
+  return`<div class="tbl">
+    <div class="tbl-head"><span>#</span><span>Player</span><span>P</span><span>W</span><span>L</span><span>Pts</span></div>
+    ${rows}
+  </div><p class="hint">1 pt per win · first couple to 3 wins takes the session · dots = last 5</p>`;
+}
+
+// ── DRAW ──
+function renderDraw(){
+  // If there's a live session, show its status instead
+  if(session){
+    return renderSessionStatus();
+  }
+
+  const checks=S.players.map(p=>
+    `<div class="pcheck${sel.has(p.id)?' on':''}" onclick="toggleSel(${p.id})">${av(p,24,10)}<span class="pcheck-name">${p.name}</span></div>`
+  ).join('');
+  const n=sel.size;
+  const valid=n===4||n===6;
+  const hint=n===4?'✅ 4 selected — 2 couples':n===6?'✅ 6 selected — 3 couples, one waits':`${n} selected — pick 4 or 6 players`;
+
+  return`<div class="card">
+    <div class="card-title">🔀 New draw — who's playing?</div>
+    <div class="grid2">${checks}</div>
+    <div class="sel-hint" id="sc">${hint}</div>
+    <button class="btn" id="dbtn" onclick="doDraw()" ${valid?'':'disabled'}>Draw couples</button>
+  </div>`;
+}
+
+function renderSessionStatus(){
+  if(!session) return '';
+  const {teams, onCourt, waiting, wins, sitOuts} = session;
+  const tc=[{bg:'#dbeafe',c:'#185FA5'},{bg:'#ede9fe',c:'#534AB7'},{bg:'#dcfce7',c:'#3B6D11'}];
+
+  const mkTeamBlock=(team,idx,showWins=false)=>{
+    const col=tc[idx%3];
+    const p1=pById(team[0]),p2=pById(team[1]);
+    const w=wins[teamKey(team)]||0;
+    return`<div class="tblock" style="background:${col.bg};border:1px solid ${col.c}40">
+      <div class="tlabel" style="color:${col.c}">Team ${idx+1}${showWins?` · ${w} win${w!==1?'s':''}`:''}
+        ${showWins?`<span style="float:right;display:flex;gap:3px">${pips(w)}</span>`:''}</div>
+      <div class="tduo">${av(p1,28,11)}<span class="tn">${p1.name}</span>
+      <span style="color:var(--muted);font-size:12px">&amp;</span>
+      ${av(p2,28,11)}<span class="tn">${p2.name}</span></div>
+    </div>`;
+  };
+
+  const t1=teams[onCourt[0]], t2=teams[onCourt[1]];
+  const i1=onCourt[0], i2=onCourt[1];
+
+  let waitHtml='';
+  if(waiting!==null){
+    const wt=teams[waiting];
+    const ws=sitOuts[wt[0]]||0; // games sat out (both players same count)
+    waitHtml=`<div class="wait-block">
+      <div class="wait-label">⏳ Waiting (sat out ${ws} game${ws!==1?'s':''})</div>
+      <div class="tduo">${av(pById(wt[0]),26,10)}<span class="tn">${pById(wt[0]).name}</span>
+      <span style="color:var(--muted);font-size:12px">&amp;</span>
+      ${av(pById(wt[1]),26,10)}<span class="tn">${pById(wt[1]).name}</span></div>
+    </div>`;
+  }
+
+  return`<div class="card">
+    <div class="card-title">⚽ Session in progress</div>
+    ${mkTeamBlock(t1,i1,true)}<div class="vs-line">VS</div>${mkTeamBlock(t2,i2,true)}
+    ${waitHtml}
+    <button class="btn" style="margin-top:12px" onclick="go('add')">Add next result</button>
+    <button class="btn-ghost" onclick="endSession()">End session &amp; new draw</button>
+  </div>`;
+}
+
+function toggleSel(id){
+  sel.has(id)?sel.delete(id):sel.add(id);
+  document.querySelectorAll('.pcheck').forEach((el,i)=>{el.classList.toggle('on',sel.has(S.players[i].id))});
+  const n=sel.size;
+  const sc=document.getElementById('sc');
+  if(sc) sc.textContent=n===4?'✅ 4 selected — 2 couples':n===6?'✅ 6 selected — 3 couples, one waits':`${n} selected — pick 4 or 6 players`;
+  const btn=document.getElementById('dbtn');
+  if(btn) btn.disabled=!(n===4||n===6);
+}
+
+function doDraw(){
+  const ids=[...sel].sort(()=>Math.random()-0.5);
+  const teams=[];
+  for(let i=0;i<Math.floor(ids.length/2);i++) teams.push([ids[i*2],ids[i*2+1]]);
+
+  const wins={};
+  teams.forEach(t=>{ wins[teamKey(t)]=0; });
+
+  const sitOuts={};
+  ids.forEach(id=>{ sitOuts[id]=0; });
+
+  session={
+    id: S.sessionCount++,
+    date: new Date().toISOString().slice(0,10),
+    teams,
+    onCourt:[0,1],
+    waiting: teams.length===3 ? 2 : null,
+    wins,
+    sitOuts,
+    gameNum:1
+  };
+
+  // If 3 teams: waiting team players start with 1 sit-out
+  if(teams.length===3){
+    teams[2].forEach(id=>{ session.sitOuts[id]=1; });
+  }
+
+  picked=null; partnerPick=null;
+  save();
+  go('add');
+}
+
+function endSession(){
+  session=null; sel=new Set(); picked=null; partnerPick=null;
+  render();
+}
+
+// ── ADD ──
+function renderAdd(){
+  if(!session){
+    return`<div class="card">
+      <div class="card-title">Add a result</div>
+      <div class="info-box ib" style="margin-bottom:14px">👆 Go to the <strong>Draw tab</strong> to start a new session first.</div>
+      <button class="btn" onclick="go('draw')">Go to Draw</button>
+    </div>`;
+  }
+
+  const {teams, onCourt, waiting, wins, gameNum} = session;
+  const tw1=teams[onCourt[0]], tw2=teams[onCourt[1]];
+  const i1=onCourt[0], i2=onCourt[1];
+  const w1=wins[teamKey(tw1)]||0, w2=wins[teamKey(tw2)]||0;
+  const w1on=picked==='t1'?' on':'', w2on=picked==='t2'?' on':'';
+
+  return`<div class="form">
+    <div class="info-box ig">Game ${gameNum} · First to ${WINS_TO_CHAMP} wins the session</div>
+    <div>
+      <div class="fl">Who won?<small>Tap the winning couple</small></div>
+      <div class="win-opts">
+        <div class="wopt${w1on}" onclick="pickWin('t1')">
+          <div class="wopt-tag">TEAM ${i1+1}</div>
+          <div class="wopt-names">${tw1.map(id=>{const p=pById(id);return p?`<div>${p.name}</div>`:''}).join('')}</div>
+          <div class="wopt-wins">${pips(w1)} ${w1} win${w1!==1?'s':''}</div>
+        </div>
+        <div class="wopt${w2on}" onclick="pickWin('t2')">
+          <div class="wopt-tag">TEAM ${i2+1}</div>
+          <div class="wopt-names">${tw2.map(id=>{const p=pById(id);return p?`<div>${p.name}</div>`:''}).join('')}</div>
+          <div class="wopt-wins">${pips(w2)} ${w2} win${w2!==1?'s':''}</div>
+        </div>
+      </div>
+    </div>
+    <div><div class="fl">Date</div><input type="date" id="dt" value="${session.date}"></div>
+    <button class="btn" id="savebtn" onclick="doSave()" ${picked?'':'disabled'}>Save result</button>
+    <div class="saved" id="sv">✅ Saved!</div>
+  </div>`;
+}
+
+function pickWin(w){
+  picked=w;
+  document.querySelectorAll('.wopt').forEach((el,i)=>{el.classList.toggle('on',i===(w==='t1'?0:1))});
+  const btn=document.getElementById('savebtn');
+  if(btn) btn.disabled=false;
+}
+
+function doSave(){
+  if(!picked||!session) return;
+  const date=document.getElementById('dt').value||session.date;
+  const {teams, onCourt, waiting} = session;
+  const tw1=teams[onCourt[0]], tw2=teams[onCourt[1]];
+
+  // Save match
+  S.matches.push({id:S.nid++, tw1, tw2, winner:picked, date, gameNum:session.gameNum, sessionId:session.id});
+  save();
+
+  const winnerIdx = picked==='t1'?onCourt[0]:onCourt[1];
+  const loserIdx  = picked==='t1'?onCourt[1]:onCourt[0];
+  const winnerTeam=teams[winnerIdx];
+  const loserTeam =teams[loserIdx];
+
+  // Update session wins
+  session.wins[teamKey(winnerTeam)]=(session.wins[teamKey(winnerTeam)]||0)+1;
+  const newWins=session.wins[teamKey(winnerTeam)];
+
+  const sv=document.getElementById('sv');
+  sv.style.display='block';
+
+  setTimeout(()=>{
+    sv.style.display='none';
+
+    // Check if this team has won the session
+    if(newWins>=WINS_TO_CHAMP){
+      showChampion(winnerTeam);
+      return;
+    }
+
+    // Rotate: loser goes off, waiting comes on (if exists)
+    session.gameNum++;
+
+    if(waiting!==null){
+      // 3-team rotation: loser goes to wait, waiting comes on to play winner
+      const newWaiting=loserIdx;
+      loserTeam.forEach(id=>{ session.sitOuts[id]=(session.sitOuts[id]||0)+1; });
+      session.onCourt=[winnerIdx, waiting];
+      session.waiting=newWaiting;
+    }
+    // 2-team: winner stays, loser stays — same teams, just keep playing
+    // (onCourt doesn't change for 2 teams)
+
+    picked=null;
+    render();
+    go('add');
+  },900);
+}
+
+function showChampion(winnerTeam){
+  const names=teamLabel(winnerTeam);
+  const wins=session.wins[teamKey(winnerTeam)];
+
+  // Show champion screen in add tab
+  document.getElementById('add').innerHTML=`
+    <div class="champ-banner">
+      <span class="crown">🏆</span>
+      <h2>${names}</h2>
+      <p>Session champions with ${wins} wins!</p>
+    </div>
+    <div style="margin-top:16px">
+      <button class="btn" onclick="newDraw()">🔀 New draw</button>
+    </div>`;
+
+  // Also store session champion in matches (no extra match, just note)
+  session=null; sel=new Set(); picked=null; partnerPick=null;
+  save();
+
+  // Update badge
+  S.sessionCount = (S.sessionCount||1)+1;
+  save();
+}
+
+function newDraw(){
+  session=null; sel=new Set(); picked=null; partnerPick=null;
+  go('draw');
+}
+
+// ── RESULTS ──
+function renderResults(){
+  if(!S.matches.length) return`<div class="empty"><p>⚽</p><p>No matches yet</p></div>`;
+
+  // Group by sessionId
+  const bySession={};
+  [...S.matches].sort((a,b)=>a.id-b.id).forEach(m=>{
+    const sid=m.sessionId||0;
+    if(!bySession[sid]) bySession[sid]=[];
+    bySession[sid].push(m);
+  });
+
+  const sessionIds=Object.keys(bySession).sort((a,b)=>b-a);
+  return sessionIds.map(sid=>{
+    const ms=bySession[sid];
+    const dateStr=new Date(ms[0].date+'T12:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+
+    // Find session champion (team with 3 wins)
+    const winCount={};
+    ms.forEach(m=>{
+      const wt=m.winner==='t1'?m.tw1:m.tw2;
+      const k=teamKey(wt);
+      winCount[k]=(winCount[k]||0)+1;
+    });
+    const champKey=Object.keys(winCount).find(k=>winCount[k]>=WINS_TO_CHAMP);
+    let champHtml='';
+    if(champKey){
+      const champIds=champKey.split(',').map(Number);
+      champHtml=`<div class="session-champ">
+        <span class="crown">🏆</span>
+        <div class="title">${teamLabel(champIds)}</div>
+        <div class="sub">Session ${sid} champions · ${winCount[champKey]} wins</div>
+      </div>`;
+    }
+
+    const matchRows=ms.map(m=>{
+      const t1w=m.winner==='t1';
+      return`<div class="rc">
+        <div class="rc-date">Game ${m.gameNum||'?'} · ${dateStr} <span class="rc-tag">Session ${sid}</span></div>
+        <div class="rc-match">
+          <div class="rc-side"><div class="rc-tname">${teamLabel(m.tw1)}</div></div>
+          <div class="rc-center">
+            <span class="wb ${t1w?'win':'loss'}">${t1w?'WIN':'LOSS'}</span>
+            <span class="rc-vs">vs</span>
+            <span class="wb ${!t1w?'win':'loss'}">${!t1w?'WIN':'LOSS'}</span>
+          </div>
+          <div class="rc-side r"><div class="rc-tname">${teamLabel(m.tw2)}</div></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return champHtml+matchRows;
+  }).join('');
+}
+
+function go(t){
+  tab=t;
+  ['standings','draw','results','add'].forEach(id=>{document.getElementById(id).style.display=id===t?'':'none'});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['standings','draw','results','add'][i]===t)});
+  render();
+}
+
+function render(){
+  const fn={standings:renderStandings,draw:renderDraw,results:renderResults,add:renderAdd};
+  document.getElementById(tab).innerHTML=fn[tab]();
+  document.getElementById('sub').textContent=`${S.players.length} players · ${S.matches.length} matches`;
+  const badge=document.getElementById('session-badge');
+  if(badge) badge.textContent=session?`Session ${session.id}`:`Season 1`;
+}
+
+load(); render();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
