@@ -140,7 +140,7 @@
 </div>
 
 <script>
-const KEY = 'fifaforlife_v8';
+const KEY = 'fifaforlife_v9';
 const WINS_TO_CHAMP = 3;
 const PAL = [
   {c:'#185FA5',b:'#dbeafe'},{c:'#534AB7',b:'#ede9fe'},{c:'#993C1D',b:'#fee2d5'},
@@ -181,7 +181,7 @@ let picked = null;       // 't1'|'t2'
 let partnerPick = null;  // id chosen to partner the sitter
 
 function load(){
-  ["fifaforlife_v1","fifaforlife_v2","fifaforlife_v3","fifaforlife_v4","fifaforlife_v5","fifaforlife_v6","fifaforlife_v7"].forEach(k=>localStorage.removeItem(k));
+  ["fifaforlife_v1","fifaforlife_v2","fifaforlife_v3","fifaforlife_v4","fifaforlife_v5","fifaforlife_v6","fifaforlife_v7","fifaforlife_v8"].forEach(k=>localStorage.removeItem(k));
   try{
     const r=localStorage.getItem(KEY);
     if(r){
