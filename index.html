@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FIFA for Life">
+  <meta name="theme-color" content="#1a7a3c">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>FIFA for Life</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{--g:#1a7a3c;--gl:#e8f5ed;--bg:#f2f2f7;--card:#fff;--bd:rgba(0,0,0,0.1);--tx:#1c1c1e;--mu:#6b6b6b;--sb:#f2f2f7}
+    @media(prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--bd:rgba(255,255,255,0.12);--tx:#fff;--mu:#8e8e93;--sb:#2c2c2e;--gl:#0d3320}}
+    html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:var(--tx);overflow:hidden}
+    .app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto}
+    .hdr{background:var(--g);padding:calc(env(safe-area-inset-top)+14px) 16px 12px;flex-shrink:0}
+    .hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+    .hdr h1{font-size:20px;font-weight:700;color:#fff}
+    .hdr-sub{font-size:12px;color:rgba(255,255,255,0.7)}
+    .bdg{background:rgba(255,255,255,0.2);font-size:11px;padding:3px 9px;border-radius:20px;color:#fff;font-weight:600}
+    .tabs{display:flex;background:var(--card);border-bottom:0.5px solid var(--bd);flex-shrink:0}
+    .tab{flex:1;text-align:center;padding:8px 0;font-size:10px;font-weight:500;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;user-select:none}
+    .tab i{font-size:19px;display:block;margin-bottom:1px}
+    .tab.on{color:var(--g);border-bottom-color:var(--g)}
+    .scr{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
+
+    /* shared */
+    .card{background:var(--card);border-radius:14px;border:0.5px solid var(--bd);padding:14px;margin-bottom:12px}
+    .ct{font-size:13px;font-weight:600;color:var(--mu);margin-bottom:12px}
+    .btn{width:100%;padding:13px;background:var(--g);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+    .btn:disabled{opacity:0.35;cursor:default}
+    .btn:active{opacity:0.8}
+    .btn-ghost{background:none;border:none;font-size:13px;color:var(--mu);cursor:pointer;padding:8px 0;font-family:inherit;width:100%;text-align:center}
+    .saved{background:var(--gl);color:var(--g);border-radius:10px;padding:10px;text-align:center;font-size:14px;font-weight:600;display:none;margin-top:4px}
+    .info{border-radius:10px;padding:11px 13px;font-size:13px;font-weight:500;margin-bottom:4px}
+    .ig{background:var(--gl);color:var(--g)}
+    .io{background:#fef3c7;color:#92400e}
+    .ib{background:#eff6ff;color:#1d4ed8}
+    .empty{text-align:center;padding:50px 20px;color:var(--mu);font-size:14px}
+
+    /* table */
+    .tbl{background:var(--card);border-radius:14px;border:0.5px solid var(--bd);overflow:hidden;margin-bottom:10px}
+    .tr{display:grid;grid-template-columns:22px 1fr 28px 28px 28px 36px;gap:2px;padding:9px 12px;align-items:center}
+    .tr.hd{background:var(--sb);font-size:11px;font-weight:600;color:var(--mu)}
+    .tr:not(.hd){border-top:0.5px solid var(--bd)}
+    .tr.gld{background:var(--gl)}
+    .pos{font-size:12px;font-weight:600;color:var(--mu)}
+    .pos.f{color:var(--g)}.pos.l{color:#dc2626}
+    .stn{display:flex;align-items:center;gap:7px;min-width:0}
+    .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:10px}
+    .pn{font-size:13px;font-weight:500;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .nm{font-size:12px;color:var(--mu);text-align:center}
+    .pt{font-size:14px;font-weight:700;color:var(--tx);text-align:center}
+    .dts{display:flex;gap:3px;margin-top:2px}
+    .dt{width:7px;height:7px;border-radius:50%}
+    .dt.W{background:var(--g)}.dt.L{background:#dc2626}
+
+    /* draw player grid */
+    .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+    .pc{display:flex;align-items:center;gap:8px;background:var(--sb);border-radius:10px;padding:10px 12px;cursor:pointer;border:2px solid transparent;user-select:none}
+    .pc.on{border-color:var(--g);background:var(--gl)}
+    .pc-name{font-size:14px;font-weight:600;color:var(--tx)}
+    .hint{font-size:12px;color:var(--mu);text-align:center;margin-bottom:10px}
+
+    /* session teams */
+    .tblock{border-radius:10px;padding:12px;margin-bottom:8px}
+    .tlbl{font-size:11px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+    .duo{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+    .duo .dn{font-size:14px;font-weight:600;color:var(--tx)}
+    .vs{text-align:center;font-size:13px;font-weight:700;color:var(--mu);margin:2px 0}
+    .wb{display:block;background:var(--sb);border-radius:10px;padding:10px 12px;margin-top:6px}
+    .wb-lbl{font-size:11px;color:#92400e;font-weight:700;margin-bottom:5px}
+
+    /* win picker */
+    .wopts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .wo{background:var(--sb);border-radius:12px;padding:15px 10px;text-align:center;cursor:pointer;border:2px solid transparent;user-select:none}
+    .wo.on{border-color:var(--g);background:var(--gl)}
+    .wo-tag{font-size:10px;font-weight:700;color:var(--mu);margin-bottom:6px;letter-spacing:.4px}
+    .wo-names{font-size:14px;font-weight:700;color:var(--tx);line-height:1.6}
+    .wo-wins{font-size:11px;color:var(--g);margin-top:5px;font-weight:600}
+    .pip{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bd);margin:0 1px}
+    .pip.on{background:var(--g)}
+
+    /* partner pick */
+    .popts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .po{background:var(--sb);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;border:2px solid transparent;user-select:none}
+    .po.on{border-color:#1d4ed8;background:#eff6ff}
+    .po-name{font-size:16px;font-weight:700;color:var(--tx)}
+    .po-sub{font-size:11px;color:var(--mu);margin-top:3px}
+
+    /* results */
+    .rc{background:var(--card);border-radius:14px;border:0.5px solid var(--bd);padding:12px 14px;margin-bottom:10px}
+    .rd{font-size:11px;color:var(--mu);margin-bottom:7px}
+    .rm{display:flex;align-items:center;gap:6px}
+    .rs{flex:1}.rs.r{text-align:right}
+    .rn{font-size:14px;font-weight:600;color:var(--tx)}
+    .rc2{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+    .rb{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+    .rb.w{background:var(--gl);color:var(--g)}.rb.l{background:#fef2f2;color:#dc2626}
+    .rv{font-size:11px;color:var(--mu)}
+    .rtag{font-size:10px;color:var(--mu);background:var(--sb);border-radius:7px;padding:2px 6px;margin-left:4px}
+    .schamp{background:#fef3c7;border-radius:14px;border:0.5px solid #fbbf24;padding:13px;text-align:center;margin-bottom:10px}
+    .schamp .cr{font-size:26px;display:block;margin-bottom:3px}
+    .schamp .ct2{font-size:15px;font-weight:700;color:#92400e}
+    .schamp .cs{font-size:12px;color:#b45309;margin-top:2px}
+
+    /* champ banner */
+    .cban{background:#fef3c7;border-radius:14px;border:1px solid #fbbf24;padding:20px 16px;text-align:center;margin-bottom:14px}
+    .cban .cr{font-size:44px;display:block;margin-bottom:8px}
+    .cban h2{font-size:19px;font-weight:700;color:#92400e}
+    .cban p{font-size:13px;color:#b45309;margin-top:4px}
+
+    input[type=date]{background:var(--sb);border:0.5px solid var(--bd);border-radius:10px;color:var(--tx);font-size:15px;padding:10px 12px;outline:none;-webkit-appearance:none;font-family:inherit;width:100%}
+    .fl{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:8px}
+    .fl small{font-size:11px;color:var(--mu);font-weight:400;margin-left:4px}
+    .fgrp{display:flex;flex-direction:column;gap:14px}
+    .hint2{font-size:11px;color:var(--mu);text-align:center;margin-top:8px}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-top">
+      <h1>⚽ FIFA for Life</h1>
+      <span class="bdg" id="sbdg">Season 1</span>
+    </div>
+    <div class="hdr-sub" id="sub">Loading...</div>
+  </div>
+  <div class="tabs">
+    <div class="tab on" onclick="go('tbl')"><i>🏆</i>Table</div>
+    <div class="tab" onclick="go('drw')"><i>🔀</i>Draw</div>
+    <div class="tab" onclick="go('res')"><i>⚽</i>Results</div>
+    <div class="tab" onclick="go('add')"><i>➕</i>Add</div>
+  </div>
+  <div class="scr">
+    <div id="tbl"></div>
+    <div id="drw" style="display:none"></div>
+    <div id="res" style="display:none"></div>
+    <div id="add" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────
+var PLAYERS = [
+  {id:1,name:"Gay",    c:"#185FA5",b:"#dbeafe"},
+  {id:2,name:"Amos",   c:"#6d28d9",b:"#ede9fe"},
+  {id:3,name:"Shalom", c:"#b91c1c",b:"#fee2e2"},
+  {id:4,name:"Nissim", c:"#065f46",b:"#d1fae5"},
+  {id:5,name:"Idan",   c:"#92400e",b:"#fef3c7"},
+  {id:6,name:"Ronen",  c:"#9d174d",b:"#fce7f3"},
+  {id:7,name:"Yoav",   c:"#0e7490",b:"#cffafe"}
+];
+
+var WINS_NEEDED = 3;
+var STORE_KEY = "ffl_final_v1";
+
+// matches: [{id,tw1:[],tw2:[],winner:"t1"|"t2",date,game,sid}]
+var matches = [];
+var nid = 1;
+var sidCount = 1;
+
+// live session
+// {sid, tw1, tw2, sitter([] or null), wins:{key:n}, sitouts:{id:n}, game, date,
+//  phase:"play"|"partner",
+//  -- partner phase extras:
+//  winner, loser, sitterIds, candA, candB}
+var sess = null;
+
+var curtab = "tbl";
+var sel = {};      // {id: true} selected for draw
+var wpick = null;  // "t1"|"t2"
+var ppick = null;  // id chosen as partner
+
+// ─── STORAGE ────────────────────────────────────────────
+function loadData() {
+  // clear old keys
+  var old = ["fifaforlife_v1","fifaforlife_v2","fifaforlife_v3","fifaforlife_v4",
+             "fifaforlife_v5","fifaforlife_v6","fifaforlife_v7","fifaforlife_v8","fifaforlife_v9"];
+  old.forEach(function(k){ try{localStorage.removeItem(k)}catch(e){} });
+  try {
+    var r = localStorage.getItem(STORE_KEY);
+    if (r) {
+      var d = JSON.parse(r);
+      matches = d.matches || [];
+      nid = d.nid || 1;
+      sidCount = d.sidCount || 1;
+      sess = d.sess || null;
+    }
+  } catch(e) {}
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({matches:matches, nid:nid, sidCount:sidCount, sess:sess}));
+  } catch(e) {}
+}
+
+// ─── HELPERS ────────────────────────────────────────────
+function ini(name) { return name.slice(0,2).toUpperCase(); }
+
+function av(p, sz, fs) {
+  sz = sz || 26; fs = fs || 10;
+  return '<div class="av" style="width:'+sz+'px;height:'+sz+'px;font-size:'+fs+'px;background:'+p.b+';color:'+p.c+'">'+ini(p.name)+'</div>';
+}
+
+function pById(id) {
+  for (var i=0; i<PLAYERS.length; i++) if (PLAYERS[i].id===id) return PLAYERS[i];
+  return null;
+}
+
+function tLabel(ids) {
+  return ids.map(function(id){ var p=pById(id); return p?p.name:'?'; }).join(' & ');
+}
+
+function tKey(ids) {
+  return ids.slice().sort(function(a,b){return a-b;}).join(',');
+}
+
+function pipsHtml(w) {
+  var h = '';
+  for (var i=0; i<WINS_NEEDED; i++) h += '<span class="pip'+(i<w?' on':'')+'"></span>';
+  return h;
+}
+
+function drawHint(n) {
+  if (n < 4) return n + ' selected — need at least 4';
+  if (n === 4) return '✅ 2 couples — play until '+WINS_NEEDED+' wins';
+  if (n === 5) return '✅ 2 couples + 1 sits out solo';
+  if (n === 6) return '✅ 3 couples — one couple waits';
+  if (n === 7) return '✅ 3 couples + 1 sits out solo';
+  return n + ' selected — max 7';
+}
+
+// ─── STANDINGS ──────────────────────────────────────────
+function calcStandings() {
+  var map = {};
+  PLAYERS.forEach(function(p) {
+    map[p.id] = {id:p.id, name:p.name, c:p.c, b:p.b, P:0, W:0, L:0, Pts:0, form:[]};
+  });
+  matches.slice().sort(function(a,b){return a.id-b.id;}).forEach(function(m) {
+    var winners = m.winner==='t1' ? m.tw1 : m.tw2;
+    var losers  = m.winner==='t1' ? m.tw2 : m.tw1;
+    winners.concat(losers).forEach(function(id){ if(map[id]) map[id].P++; });
+    winners.forEach(function(id){ if(map[id]){ map[id].W++; map[id].Pts++; map[id].form.push('W'); }});
+    losers.forEach(function(id){  if(map[id]){ map[id].L++;               map[id].form.push('L'); }});
+  });
+  return Object.values(map).sort(function(a,b){ return b.Pts-a.Pts || b.W-a.W; });
+}
+
+function renderTbl() {
+  var st = calcStandings();
+  var rows = st.map(function(p, i) {
+    var pc = i===0 ? 'f' : (i===st.length-1 && st.length>1 ? 'l' : '');
+    var form = p.form.slice(-5).map(function(f){ return '<span class="dt '+f+'"></span>'; }).join('');
+    return '<div class="tr'+(i===0?' gld':'')+'">'
+      +'<div class="pos '+pc+'">'+(i+1)+'</div>'
+      +'<div class="stn">'+av(p,26,10)+'<div style="min-width:0"><div class="pn">'+p.name+'</div><div class="dts">'+form+'</div></div></div>'
+      +'<div class="nm">'+p.P+'</div>'
+      +'<div class="nm">'+p.W+'</div>'
+      +'<div class="nm">'+p.L+'</div>'
+      +'<div class="pt">'+p.Pts+'</div>'
+      +'</div>';
+  }).join('');
+  return '<div class="tbl"><div class="tr hd"><span>#</span><span>Player</span><span>P</span><span>W</span><span>L</span><span>Pts</span></div>'+rows+'</div>'
+    +'<p class="hint2">1 pt per win · first to '+WINS_NEEDED+' wins the session · dots = last 5</p>';
+}
+
+// ─── DRAW ────────────────────────────────────────────────
+function renderDrw() {
+  if (sess && sess.phase) return renderSessStatus();
+
+  var checks = PLAYERS.map(function(p) {
+    var on = sel[p.id] ? ' on' : '';
+    return '<div class="pc'+on+'" onclick="toggleSel('+p.id+')">'
+      +av(p,24,10)
+      +'<span class="pc-name">'+p.name+'</span>'
+      +'</div>';
+  }).join('');
+
+  var n = Object.keys(sel).length;
+  var valid = n >= 4 && n <= 7;
+
+  return '<div class="card">'
+    +'<div class="ct">🔀 Who\'s playing today?</div>'
+    +'<div class="pgrid">'+checks+'</div>'
+    +'<div class="hint" id="dh">'+drawHint(n)+'</div>'
+    +'<button class="btn" id="dbtn" onclick="doDraw()" '+(valid?'':'disabled')+'>Draw couples</button>'
+    +'</div>';
+}
+
+function renderSessStatus() {
+  if (!sess) return '';
+  var tw1=sess.tw1, tw2=sess.tw2, sitter=sess.sitter;
+  var w1=sess.wins[tKey(tw1)]||0, w2=sess.wins[tKey(tw2)]||0;
+  var tc=[{bg:'#dbeafe',c:'#185FA5'},{bg:'#ede9fe',c:'#6d28d9'},{bg:'#d1fae5',c:'#065f46'}];
+
+  function mkBlock(team, i, w) {
+    var col=tc[i%3];
+    var duoHtml = team.map(function(id){
+      var p=pById(id); return p ? av(p,28,11)+'<span class="dn">'+p.name+'</span>' : '';
+    }).join('<span style="color:var(--mu);font-size:12px">&amp;</span>');
+    return '<div class="tblock" style="background:'+col.bg+';border:1px solid '+col.c+'40">'
+      +'<div class="tlbl"><span style="color:'+col.c+'">Team '+(i+1)+'</span><span style="color:var(--g);font-size:12px">'+pipsHtml(w)+' '+w+' win'+(w!==1?'s':'')+'</span></div>'
+      +'<div class="duo">'+duoHtml+'</div>'
+      +'</div>';
+  }
+
+  var sitterHtml = '';
+  if (sitter && sitter.length) {
+    var sg = sess.sitouts[sitter[0]] || 0;
+    var sduoHtml = sitter.map(function(id){
+      var p=pById(id); return p ? av(p,26,10)+'<span class="dn" style="font-size:13px">'+p.name+'</span>' : '';
+    }).join('<span style="color:var(--mu);font-size:12px">&amp;</span>');
+    sitterHtml = '<div class="wb"><div class="wb-lbl">⏳ Sitting out ('+sg+' game'+(sg!==1?'s':'')+')</div><div class="duo">'+sduoHtml+'</div></div>';
+  }
+
+  return '<div class="card">'
+    +'<div class="ct">⚽ Game '+sess.game+' in progress</div>'
+    +mkBlock(tw1,0,w1)+'<div class="vs">VS</div>'+mkBlock(tw2,1,w2)
+    +sitterHtml
+    +'<button class="btn" style="margin-top:12px" onclick="go(\'add\')">Add result</button>'
+    +'<button class="btn-ghost" onclick="endSess()">End session &amp; new draw</button>'
+    +'</div>';
+}
+
+function toggleSel(id) {
+  var n = Object.keys(sel).length;
+  if (!sel[id] && n >= 7) return;
+  if (sel[id]) delete sel[id]; else sel[id] = true;
+  render();
+}
+
+function doDraw() {
+  var ids = Object.keys(sel).map(Number).sort(function(){ return Math.random()-0.5; });
+  var numCouples = Math.floor(ids.length / 2);
+  var hasSolo = ids.length % 2 === 1;
+
+  var couples = [];
+  for (var i=0; i<numCouples; i++) couples.push([ids[i*2], ids[i*2+1]]);
+  var solo = hasSolo ? ids[ids.length-1] : null;
+
+  // First two couples play; third couple (if any) + solo (if any) sit out
+  var waitCouple = couples.length >= 3 ? couples[2] : null;
+  var sitter = (waitCouple ? waitCouple.slice() : []).concat(solo !== null ? [solo] : []);
+
+  var wins = {};
+  wins[tKey(couples[0])] = 0;
+  wins[tKey(couples[1])] = 0;
+
+  var sitouts = {};
+  ids.forEach(function(id){ sitouts[id] = 0; });
+  sitter.forEach(function(id){ sitouts[id] = 1; });
+
+  sess = {
+    phase: 'play',
+    sid: sidCount++,
+    tw1: couples[0],
+    tw2: couples[1],
+    sitter: sitter.length ? sitter : null,
+    waitCouple: waitCouple,
+    solo: solo,
+    wins: wins,
+    sitouts: sitouts,
+    game: 1,
+    date: new Date().toISOString().slice(0,10)
+  };
+
+  wpick = null; ppick = null;
+  saveData();
+  go('add');
+}
+
+function endSess() {
+  sess = null; sel = {}; wpick = null; ppick = null;
+  saveData(); render();
+}
+
+// ─── ADD ─────────────────────────────────────────────────
+function renderAdd() {
+  if (!sess) {
+    return '<div class="card"><div class="ct">Add a result</div>'
+      +'<div class="info ib" style="margin-bottom:12px">👆 Go to Draw first to set up the session.</div>'
+      +'<button class="btn" onclick="go(\'drw\')">Go to Draw</button></div>';
+  }
+
+  // Partner pick phase
+  if (sess.phase === 'partner') {
+    var cA=pById(sess.candA), cB=pById(sess.candB);
+    var sNames = tLabel(sess.sitterIds);
+    var paOn = ppick===sess.candA?' on':'';
+    var pbOn = ppick===sess.candB?' on':'';
+    var isAuto = sess.autoP !== null;
+    var msg = isAuto
+      ? '⏳ <strong>'+pById(sess.autoP).name+'</strong> sat out longest — they partner <strong>'+sNames+'</strong>'
+      : '🎲 Equal sit-outs — draw to decide who partners <strong>'+sNames+'</strong>';
+    return '<div class="fgrp">'
+      +'<div class="info io">'+msg+'</div>'
+      +'<div><div class="fl">Who partners <strong>'+sNames+'</strong>?</div>'
+      +'<div class="popts">'
+      +'<div class="po'+paOn+'" onclick="pickP('+sess.candA+')"><div class="po-name">'+cA.name+'</div><div class="po-sub">from losing team</div></div>'
+      +'<div class="po'+pbOn+'" onclick="pickP('+sess.candB+')"><div class="po-name">'+cB.name+'</div><div class="po-sub">from losing team</div></div>'
+      +'</div></div>'
+      +'<button class="btn" id="pbtn" onclick="confirmP()" '+(ppick!==null?'':'disabled')+'>Confirm lineup</button>'
+      +'</div>';
+  }
+
+  // Play phase
+  var tw1=sess.tw1, tw2=sess.tw2;
+  var w1=sess.wins[tKey(tw1)]||0, w2=sess.wins[tKey(tw2)]||0;
+  var o1=wpick==='t1'?' on':'', o2=wpick==='t2'?' on':'';
+
+  var n1html = tw1.map(function(id){var p=pById(id);return p?'<div>'+p.name+'</div>':''}).join('');
+  var n2html = tw2.map(function(id){var p=pById(id);return p?'<div>'+p.name+'</div>':''}).join('');
+
+  return '<div class="fgrp">'
+    +'<div class="info ig">Game '+sess.game+' &nbsp;·&nbsp; First to '+WINS_NEEDED+' wins the session</div>'
+    +'<div><div class="fl">Who won? <small>Tap the winning couple</small></div>'
+    +'<div class="wopts">'
+    +'<div class="wo'+o1+'" onclick="pickW(\'t1\')">'
+      +'<div class="wo-tag">TEAM 1</div>'
+      +'<div class="wo-names">'+n1html+'</div>'
+      +'<div class="wo-wins">'+pipsHtml(w1)+' '+w1+' win'+(w1!==1?'s':'')+'</div>'
+    +'</div>'
+    +'<div class="wo'+o2+'" onclick="pickW(\'t2\')">'
+      +'<div class="wo-tag">TEAM 2</div>'
+      +'<div class="wo-names">'+n2html+'</div>'
+      +'<div class="wo-wins">'+pipsHtml(w2)+' '+w2+' win'+(w2!==1?'s':'')+'</div>'
+    +'</div>'
+    +'</div></div>'
+    +'<div><div class="fl">Date</div><input type="date" id="dt" value="'+sess.date+'"></div>'
+    +'<button class="btn" id="wbtn" onclick="doSave()" '+(wpick?'':'disabled')+'>Save result</button>'
+    +'<div class="saved" id="sv">✅ Saved!</div>'
+    +'</div>';
+}
+
+function pickW(w) {
+  wpick = w;
+  var els = document.querySelectorAll('.wo');
+  if (els[0]) els[0].classList.toggle('on', w==='t1');
+  if (els[1]) els[1].classList.toggle('on', w==='t2');
+  var btn = document.getElementById('wbtn');
+  if (btn) btn.disabled = false;
+}
+
+function pickP(id) {
+  ppick = id;
+  var els = document.querySelectorAll('.po');
+  if (els[0]) els[0].classList.toggle('on', sess.candA===id);
+  if (els[1]) els[1].classList.toggle('on', sess.candB===id);
+  var btn = document.getElementById('pbtn');
+  if (btn) btn.disabled = false;
+}
+
+function doSave() {
+  if (!wpick || !sess) return;
+  var dt = document.getElementById('dt');
+  var date = dt ? dt.value : sess.date;
+  var tw1=sess.tw1, tw2=sess.tw2;
+
+  matches.push({id:nid++, tw1:tw1.slice(), tw2:tw2.slice(), winner:wpick, date:date, game:sess.game, sid:sess.sid});
+  saveData();
+
+  var winTeam = wpick==='t1' ? tw1 : tw2;
+  var loseTeam = wpick==='t1' ? tw2 : tw1;
+  var wk = tKey(winTeam);
+  sess.wins[wk] = (sess.wins[wk]||0) + 1;
+  var newW = sess.wins[wk];
+
+  var sv = document.getElementById('sv');
+  if (sv) sv.style.display = 'block';
+
+  setTimeout(function() {
+    if (sv) sv.style.display = 'none';
+    if (newW >= WINS_NEEDED) { showChamp(winTeam, newW); return; }
+
+    sess.game++;
+    var sitter = sess.sitter;
+
+    if (!sitter || !sitter.length) {
+      // 4 players: same teams keep playing
+      wpick=null; render(); go('add'); return;
+    }
+
+    if (sitter.length === 2) {
+      // Waiting couple comes on, loser sits out
+      loseTeam.forEach(function(id){ sess.sitouts[id]=(sess.sitouts[id]||0)+1; });
+      var nk = tKey(sitter);
+      if (!sess.wins[nk]) sess.wins[nk]=0;
+      sess.tw1 = winTeam.slice();
+      sess.tw2 = sitter.slice();
+      sess.sitter = loseTeam.slice();
+      wpick=null; saveData(); render(); go('add'); return;
+    }
+
+    // Solo sitter: pair with one loser
+    var sitterId = sitter[0];
+    var loserA = loseTeam[0], loserB = loseTeam[1];
+    var soA = sess.sitouts[loserA]||0, soB = sess.sitouts[loserB]||0;
+    var autoP = soA > soB ? loserA : soB > soA ? loserB : null;
+
+    sess.phase = 'partner';
+    sess.pWinner = winTeam.slice();
+    sess.pLoser = loseTeam.slice();
+    sess.sitterIds = [sitterId];
+    sess.candA = loserA;
+    sess.candB = loserB;
+    sess.autoP = autoP;
+    ppick = autoP;
+    wpick = null;
+    saveData(); render(); go('add');
+  }, 900);
+}
+
+function confirmP() {
+  if (!ppick || !sess) return;
+  var sitterId = sess.sitterIds[0];
+  var partnerId = ppick;
+  var newTeam = [sitterId, partnerId];
+  var otherLoser = sess.pLoser[0]===partnerId ? sess.pLoser[1] : sess.pLoser[0];
+
+  sess.sitouts[otherLoser] = (sess.sitouts[otherLoser]||0)+1;
+  var nk = tKey(newTeam);
+  if (!sess.wins[nk]) sess.wins[nk]=0;
+
+  sess.phase = 'play';
+  sess.tw1 = sess.pWinner.slice();
+  sess.tw2 = newTeam;
+  sess.sitter = [otherLoser];
+  sess.pWinner=null; sess.pLoser=null; sess.sitterIds=null; sess.candA=null; sess.candB=null; sess.autoP=null;
+  ppick=null; wpick=null;
+  saveData(); render(); go('add');
+}
+
+function showChamp(winTeam, w) {
+  var names = tLabel(winTeam);
+  document.getElementById('add').innerHTML =
+    '<div class="cban"><span class="cr">🏆</span><h2>'+names+'</h2><p>Session champions · '+w+' wins!</p></div>'
+    +'<button class="btn" onclick="newDraw()">🔀 New draw</button>';
+  sess=null; sel={}; wpick=null; ppick=null;
+  saveData();
+}
+
+function newDraw() { sess=null; sel={}; wpick=null; ppick=null; go('drw'); }
+
+// ─── RESULTS ─────────────────────────────────────────────
+function renderRes() {
+  if (!matches.length) return '<div class="empty">⚽<br>No matches yet</div>';
+  var byS = {};
+  matches.slice().sort(function(a,b){return a.id-b.id;}).forEach(function(m){
+    var s=m.sid||0;
+    if(!byS[s]) byS[s]=[];
+    byS[s].push(m);
+  });
+  return Object.keys(byS).sort(function(a,b){return b-a;}).map(function(sid){
+    var ms=byS[sid];
+    var ds=new Date(ms[0].date+'T12:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    var wc={};
+    ms.forEach(function(m){var k=tKey(m.winner==='t1'?m.tw1:m.tw2);wc[k]=(wc[k]||0)+1;});
+    var ck=Object.keys(wc).find(function(k){return wc[k]>=WINS_NEEDED;});
+    var champH='';
+    if(ck){
+      var cids=ck.split(',').map(Number);
+      champH='<div class="schamp"><span class="cr">🏆</span><div class="ct2">'+tLabel(cids)+'</div><div class="cs">Session '+sid+' champions</div></div>';
+    }
+    var rows=ms.map(function(m){
+      var t1w=m.winner==='t1';
+      return '<div class="rc">'
+        +'<div class="rd">Game '+m.game+' <span class="rtag">Session '+sid+' · '+ds+'</span></div>'
+        +'<div class="rm">'
+        +'<div class="rs"><div class="rn">'+tLabel(m.tw1)+'</div></div>'
+        +'<div class="rc2"><span class="rb '+(t1w?'w':'l')+'">'+(t1w?'WIN':'LOSS')+'</span><span class="rv">vs</span><span class="rb '+(!t1w?'w':'l')+'">'+(!t1w?'WIN':'LOSS')+'</span></div>'
+        +'<div class="rs r"><div class="rn">'+tLabel(m.tw2)+'</div></div>'
+        +'</div></div>';
+    }).join('');
+    return champH+rows;
+  }).join('');
+}
+
+// ─── NAV ─────────────────────────────────────────────────
+function go(t) {
+  curtab=t;
+  ['tbl','drw','res','add'].forEach(function(id){ document.getElementById(id).style.display=id===t?'':'none'; });
+  document.querySelectorAll('.tab').forEach(function(el,i){ el.classList.toggle('on',['tbl','drw','res','add'][i]===t); });
+  render();
+}
+
+function render() {
+  var fn={tbl:renderTbl, drw:renderDrw, res:renderRes, add:renderAdd};
+  document.getElementById(curtab).innerHTML = fn[curtab]();
+  document.getElementById('sub').textContent = PLAYERS.length+' players · '+matches.length+' matches';
+  var b=document.getElementById('sbdg');
+  if(b) b.textContent = sess ? 'Session '+sess.sid : 'Season 1';
+}
+
+// ─── INIT ────────────────────────────────────────────────
+loadData();
+render();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
+</script>
+</body>
+</html>
