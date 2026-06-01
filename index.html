@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FIFA for Life">
+  <meta name="theme-color" content="#1a7a3c">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>FIFA for Life</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --green: #1a7a3c;
+      --green-light: #e8f5ed;
+      --bg: #f2f2f7;
+      --card: #ffffff;
+      --border: rgba(0,0,0,0.1);
+      --text: #1c1c1e;
+      --muted: #6b6b6b;
+      --secondary-bg: #f2f2f7;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --card: #1c1c1e;
+        --border: rgba(255,255,255,0.12);
+        --text: #ffffff;
+        --muted: #8e8e93;
+        --secondary-bg: #2c2c2e;
+        --green-light: #0d3320;
+      }
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      max-width: 430px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--green);
+      padding: calc(var(--safe-top) + 16px) 16px 14px;
+      flex-shrink: 0;
+    }
+    .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+    .header h1 { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.5px; }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,0.75); }
+    .season-badge { background: rgba(255,255,255,0.22); font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; color: white; }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      background: var(--card);
+      border-bottom: 0.5px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0 calc(10px);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+      user-select: none;
+    }
+    .tab .tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+    .tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+    /* CONTENT */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px 12px calc(14px + var(--safe-bottom));
+    }
+
+    /* STANDINGS */
+    .standings-table { background: var(--card); border-radius: 14px; border: 0.5px solid var(--border); overflow: hidden; }
+    .st-head { display: grid; grid-template-columns: 20px 1fr 24px 24px 28px 24px 34px; gap: 3px; padding: 8px 12px; background: var(--secondary-bg); font-size: 11px; font-weight: 600; color: var(--muted); align-items: center; }
+    .st-row { display: grid; grid-template-columns: 20px 1fr 24px 24px 28px 24px 34px; gap: 3px; padding: 10px 12px; border-top: 0.5px solid var(--border); align-items: center; }
+    .st-row.leader { background: var(--green-light); }
+    .st-pos { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .st-pos.top { color: var(--green); }
+    .st-pos.bot { color: #c0392b; }
+    .st-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .avatar { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+    .name-label { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .st-num { font-size: 13px; color: var(--muted); text-align: center; }
+    .st-pts { font-size: 14px; font-weight: 700; color: var(--text); text-align: center; }
+    .form-dots { display: flex; gap: 3px; margin-top: 2px; }
+    .fd { width: 7px; height: 7px; border-radius: 50%; }
+    .fd.W { background: var(--green); }
+    .fd.D { background: #e0a800; }
+    .fd.L { background: #c0392b; }
+    .hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+    /* RESULTS */
+    .results-list { display: flex; flex-direction: column; gap: 10px; }
+    .result-card { background: var(--card); border-radius: 14px; border: 0.5px solid var(--border); padding: 12px 14px; }
+    .result-date { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    .result-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .r-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+    .r-name.right { text-align: right; }
+    .r-score { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .score-box { background: var(--secondary-bg); border-radius: 8px; padding: 5px 12px; font-size: 20px; font-weight: 700; color: var(--text); min-width: 42px; text-align: center; }
+    .score-sep { font-size: 13px; color: var(--muted); }
+    .r-team { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .r-team.right { text-align: right; }
+    .r-badges { display: flex; justify-content: space-between; margin-top: 7px; }
+    .ob { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .ob-w { background: var(--green-light); color: var(--green); }
+    .ob-d { background: #fef9e7; color: #b7950b; }
+    .ob-l { background: #fdedec; color: #c0392b; }
+
+    /* DRAW */
+    .draw-section { display: flex; flex-direction: column; gap: 12px; }
+    .card { background: var(--card); border-radius: 14px; border: 0.5px solid var(--border); padding: 14px; }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 12px; }
+    .player-checks { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 12px; }
+    .pcheck {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--secondary-bg); border-radius: 10px;
+      padding: 10px 11px; cursor: pointer;
+      border: 1.5px solid transparent; transition: all .15s;
+      user-select: none;
+    }
+    .pcheck.selected { border-color: var(--green); background: var(--green-light); }
+    .pcheck-name { font-size: 14px; font-weight: 500; color: var(--text); }
+    .sel-count { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 10px; }
+    .team-block { border-radius: 10px; padding: 12px; margin-bottom: 8px; border: 0.5px solid var(--border); }
+    .team-label { font-size: 11px; font-weight: 700; margin-bottom: 7px; letter-spacing: .2px; }
+    .team-players { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .team-vs { text-align: center; font-size: 12px; font-weight: 500; color: var(--muted); margin: 4px 0; }
+    .odd-block { display: flex; align-items: center; gap: 10px; background: var(--secondary-bg); border-radius: 10px; padding: 10px 12px; border: 0.5px solid var(--border); margin-top: 4px; }
+
+    /* ADD */
+    .add-form { display: flex; flex-direction: column; gap: 12px; }
+    .field-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+    .row { display: flex; align-items: center; gap: 10px; }
+    select, input[type=number], input[type=date] {
+      background: var(--secondary-bg);
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      padding: 10px 12px;
+      outline: none;
+      -webkit-appearance: none;
+      font-family: inherit;
+    }
+    select { flex: 1; }
+    input[type=number] { width: 60px; text-align: center; font-weight: 700; }
+    input[type=date] { width: 100%; }
+    input[type=number]:focus, select:focus, input[type=date]:focus { border-color: var(--green); }
+
+    /* BUTTONS */
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: var(--green); color: white;
+      border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: opacity .15s;
+    }
+    .btn-primary:active { opacity: 0.8; }
+    .btn-primary:disabled { opacity: 0.35; cursor: default; }
+    .btn-ghost {
+      background: none; border: none;
+      font-size: 13px; color: var(--muted);
+      cursor: pointer; padding: 6px 0;
+      font-family: inherit; width: 100%; text-align: center;
+    }
+    .success-banner {
+      background: var(--green-light); color: var(--green);
+      border-radius: 10px; padding: 10px;
+      text-align: center; font-size: 13px; font-weight: 600;
+      display: none;
+    }
+    .info-banner {
+      background: var(--green-light); color: var(--green);
+      border-radius: 10px; padding: 10px 12px;
+      font-size: 12px; font-weight: 500;
+    }
+
+    .empty { text-align: center; padding: 48px 16px; color: var(--muted); }
+    .empty-icon { font-size: 48px; margin-bottom: 10px; }
+    .empty p { font-size: 15px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <h1>⚽ FIFA for Life</h1>
+      <span class="season-badge">Season 1</span>
+    </div>
+    <div class="header-sub" id="header-sub">7 players</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('standings')">
+      <span class="tab-icon">🏆</span>Table
+    </div>
+    <div class="tab" onclick="showTab('draw')">
+      <span class="tab-icon">🔀</span>Draw
+    </div>
+    <div class="tab" onclick="showTab('results')">
+      <span class="tab-icon">⚽</span>Results
+    </div>
+    <div class="tab" onclick="showTab('add')">
+      <span class="tab-icon">➕</span>Add
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="tab-standings"></div>
+    <div id="tab-draw" style="display:none"></div>
+    <div id="tab-results" style="display:none"></div>
+    <div id="tab-add" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js");
+  }
+</script>
+<script src="app.js"></script>
+</body>
+</html>
