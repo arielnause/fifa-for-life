@@ -48,10 +48,9 @@
 
     /* RESULTS */
     .rc{background:var(--card);border-radius:14px;border:0.5px solid var(--border);padding:13px 14px;margin-bottom:10px}
-    .rc-date{font-size:11px;color:var(--muted);margin-bottom:4px}
-    .rc-match{display:flex;align-items:center;gap:8px;margin-top:6px}
-    .rc-side{flex:1}
-    .rc-side.r{text-align:right}
+    .rc-date{font-size:11px;color:var(--muted);margin-bottom:6px}
+    .rc-match{display:flex;align-items:center;gap:8px}
+    .rc-side{flex:1}.rc-side.r{text-align:right}
     .rc-tname{font-size:14px;font-weight:600;color:var(--text)}
     .rc-center{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
     .wb{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
@@ -78,11 +77,6 @@
     .wait-block{background:var(--sub);border-radius:10px;padding:11px 12px;margin-top:4px;border:0.5px solid var(--border)}
     .wait-label{font-size:11px;color:#854F0B;font-weight:700;margin-bottom:6px}
 
-    /* session wins tracker */
-    .wins-tracker{display:flex;gap:8px;margin-bottom:14px}
-    .win-pip{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:var(--sub);display:flex;align-items:center;justify-content:center;font-size:14px}
-    .win-pip.filled{background:var(--green);border-color:var(--green)}
-
     /* ADD */
     .form{display:flex;flex-direction:column;gap:14px}
     .fl{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px}
@@ -94,21 +88,20 @@
     .wopt-names{font-size:14px;font-weight:700;color:var(--text);line-height:1.6}
     .wopt-wins{font-size:11px;color:var(--green);margin-top:4px;font-weight:600}
     input[type=date]{background:var(--sub);border:0.5px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;padding:10px 12px;outline:none;-webkit-appearance:none;font-family:inherit;width:100%}
-    .info-box{border-radius:10px;padding:11px 13px;font-size:13px;font-weight:500;line-height:1.4}
+    .info-box{border-radius:10px;padding:11px 13px;font-size:13px;font-weight:500;line-height:1.5}
     .ig{background:var(--gl);color:var(--green)}
     .ib{background:#e8f0fe;color:#1a56db}
     .io{background:#fef3c7;color:#854F0B}
-    .ir{background:#fdedec;color:#c0392b}
-    .champ-banner{background:#fef3c7;border-radius:12px;padding:16px;text-align:center;border:1px solid #f0c040}
-    .champ-banner .crown{font-size:36px;display:block;margin-bottom:6px}
-    .champ-banner h2{font-size:18px;font-weight:700;color:#854F0B}
+    .champ-banner{background:#fef3c7;border-radius:12px;padding:20px 16px;text-align:center;border:1px solid #f0c040;margin-bottom:14px}
+    .champ-banner .crown{font-size:40px;display:block;margin-bottom:8px}
+    .champ-banner h2{font-size:19px;font-weight:700;color:#854F0B}
     .champ-banner p{font-size:13px;color:#a07020;margin-top:4px}
 
     /* partner pick */
-    .draw-pick-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .pick-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .dopt{background:var(--sub);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;border:2px solid transparent;user-select:none;transition:border-color .1s}
-    .dopt.on{border-color:#854F0B;background:#fef3c7}
-    .dopt-name{font-size:15px;font-weight:700;color:var(--text)}
+    .dopt.on{border-color:#185FA5;background:#dbeafe}
+    .dopt-name{font-size:16px;font-weight:700;color:var(--text)}
     .dopt-sub{font-size:11px;color:var(--muted);margin-top:3px}
 
     .btn{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .1s}
@@ -118,6 +111,9 @@
     .empty{text-align:center;padding:60px 20px;color:var(--muted)}
     .empty p{font-size:15px;margin-top:8px}
     .hint{font-size:11px;color:var(--muted);text-align:center;margin-top:8px}
+    .pips{display:inline-flex;gap:3px;vertical-align:middle}
+    .pip{width:9px;height:9px;border-radius:50%;background:var(--border)}
+    .pip.on{background:var(--green)}
   </style>
 </head>
 <body>
@@ -144,7 +140,7 @@
 </div>
 
 <script>
-const KEY = 'fifaforlife_v7';
+const KEY = 'fifaforlife_v8';
 const WINS_TO_CHAMP = 3;
 const PAL = [
   {c:'#185FA5',b:'#dbeafe'},{c:'#534AB7',b:'#ede9fe'},{c:'#993C1D',b:'#fee2d5'},
@@ -157,25 +153,32 @@ const INIT_PLAYERS = [
   {id:7,name:'Yoav',...PAL[6]}
 ];
 
-// Stored match: {id, tw1:[id,id], tw2:[id,id], winner:'t1'|'t2', date, gameNum, sessionId}
 let S = {players:INIT_PLAYERS, matches:[], nid:1, sessionCount:1};
 
-// Live session state (not persisted — reconstructed from context)
-// session = {
-//   id, date,
-//   teams: [[id,id],[id,id],[id,id]?],  // all drawn couples
-//   onCourt: [teamIdx, teamIdx],          // indices of teams currently playing
-//   waiting: teamIdx|null,               // team waiting (if 3 teams)
-//   wins: {teamKey: count},              // wins per team THIS session (teamKey = sorted ids joined)
-//   sitOuts: {playerId: count},          // how many games each player sat out this session
-// }
+/*
+SESSION STATE
+-------------
+tw1, tw2      : current on-court teams (array of 1 or 2 player ids)
+sitter        : player ids sitting out (array, 0–2 players). null if nobody sits.
+wins          : { teamKey: count } — wins per team key this session
+sitOuts       : { playerId: count } — total games sat out this session
+gameNum       : current game number
+sessionId     : session identifier
+date          : session date
+phase         : 'play' | 'pickPartner'
+  pickPartner fields:
+    winnerTeam    : ids of winning team (stays on)
+    loserTeam     : ids of losing team (splits up)
+    sitterIds     : ids sitting out
+    candidates    : [idA, idB] loser candidates to partner with sitter
+    autoPartner   : id if priority is clear (null if draw needed)
+*/
 let session = null;
 
-// UI state
 let tab = 'standings';
-let sel = new Set();        // draw screen selections
-let picked = null;          // 't1'|'t2' win pick
-let partnerPick = null;     // id chosen as partner for sitter (7-player flow)
+let sel = new Set();
+let picked = null;       // 't1'|'t2'
+let partnerPick = null;  // id chosen to partner the sitter
 
 function load(){try{const r=localStorage.getItem(KEY);if(r)S=JSON.parse(r)}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -183,18 +186,26 @@ function ini(n){return n.slice(0,2).toUpperCase()}
 function pById(id){return S.players.find(p=>p.id===id)}
 function av(p,sz=28,fs=11){return`<div class="av" style="width:${sz}px;height:${sz}px;font-size:${fs}px;background:${p.b};color:${p.c}">${ini(p.name)}</div>`}
 function teamLabel(ids){return ids.map(id=>{const p=pById(id);return p?p.name:'?'}).join(' & ')}
-function teamKey(ids){return [...ids].sort().join(',')}
-function pips(filled,total=WINS_TO_CHAMP){
-  let h='';
-  for(let i=0;i<total;i++) h+=`<div class="win-pip${i<filled?' filled':''}"></div>`;
-  return h;
+function teamKey(ids){return[...ids].sort((a,b)=>a-b).join(',')}
+function pips(w){
+  let h='<span class="pips">';
+  for(let i=0;i<WINS_TO_CHAMP;i++) h+=`<span class="pip${i<w?' on':''}"></span>`;
+  return h+'</span>';
+}
+function drawHint(n){
+  if(n<4) return`${n} selected — need at least 4`;
+  if(n===4) return`✅ 4 players — 2 couples`;
+  if(n===5) return`✅ 5 players — 2 couples + 1 sits out`;
+  if(n===6) return`✅ 6 players — 3 couples, one couple waits`;
+  if(n===7) return`✅ 7 players — 3 couples + 1 sits out`;
+  return`${n} selected — max 7`;
 }
 
 // ── STANDINGS ──
 function calcStandings(){
   const map={};
   S.players.forEach(p=>{map[p.id]={...p,P:0,W:0,L:0,Pts:0,form:[]}});
-  [...S.matches].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id).forEach(m=>{
+  [...S.matches].sort((a,b)=>a.id-b.id).forEach(m=>{
     const winners=m.winner==='t1'?m.tw1:m.tw2;
     const losers =m.winner==='t1'?m.tw2:m.tw1;
     [...winners,...losers].forEach(id=>{if(map[id])map[id].P++});
@@ -220,112 +231,119 @@ function renderStandings(){
   return`<div class="tbl">
     <div class="tbl-head"><span>#</span><span>Player</span><span>P</span><span>W</span><span>L</span><span>Pts</span></div>
     ${rows}
-  </div><p class="hint">1 pt per win · first couple to 3 wins takes the session · dots = last 5</p>`;
+  </div><p class="hint">1 pt per win · first couple to ${WINS_TO_CHAMP} wins the session</p>`;
 }
 
 // ── DRAW ──
 function renderDraw(){
-  // If there's a live session, show its status instead
-  if(session){
-    return renderSessionStatus();
-  }
+  if(session) return renderSessionStatus();
 
   const checks=S.players.map(p=>
     `<div class="pcheck${sel.has(p.id)?' on':''}" onclick="toggleSel(${p.id})">${av(p,24,10)}<span class="pcheck-name">${p.name}</span></div>`
   ).join('');
   const n=sel.size;
-  const valid=n===4||n===6;
-  const hint=n===4?'✅ 4 selected — 2 couples':n===6?'✅ 6 selected — 3 couples, one waits':`${n} selected — pick 4 or 6 players`;
+  const valid=n>=4&&n<=7;
 
   return`<div class="card">
     <div class="card-title">🔀 New draw — who's playing?</div>
     <div class="grid2">${checks}</div>
-    <div class="sel-hint" id="sc">${hint}</div>
+    <div class="sel-hint" id="sc">${drawHint(n)}</div>
     <button class="btn" id="dbtn" onclick="doDraw()" ${valid?'':'disabled'}>Draw couples</button>
   </div>`;
 }
 
 function renderSessionStatus(){
-  if(!session) return '';
-  const {teams, onCourt, waiting, wins, sitOuts} = session;
+  if(!session||session.phase==='pickPartner') return renderAdd();
+  const {tw1,tw2,sitter,wins,sitOuts,gameNum}=session;
   const tc=[{bg:'#dbeafe',c:'#185FA5'},{bg:'#ede9fe',c:'#534AB7'},{bg:'#dcfce7',c:'#3B6D11'}];
 
-  const mkTeamBlock=(team,idx,showWins=false)=>{
-    const col=tc[idx%3];
-    const p1=pById(team[0]),p2=pById(team[1]);
+  const mkTeamBlock=(team,i)=>{
+    const col=tc[i%3];
     const w=wins[teamKey(team)]||0;
     return`<div class="tblock" style="background:${col.bg};border:1px solid ${col.c}40">
-      <div class="tlabel" style="color:${col.c}">Team ${idx+1}${showWins?` · ${w} win${w!==1?'s':''}`:''}
-        ${showWins?`<span style="float:right;display:flex;gap:3px">${pips(w)}</span>`:''}</div>
-      <div class="tduo">${av(p1,28,11)}<span class="tn">${p1.name}</span>
-      <span style="color:var(--muted);font-size:12px">&amp;</span>
-      ${av(p2,28,11)}<span class="tn">${p2.name}</span></div>
+      <div class="tlabel" style="color:${col.c}">Team ${i+1} &nbsp;${pips(w)}&nbsp; ${w}W</div>
+      <div class="tduo">${team.map(id=>{const p=pById(id);return p?av(p,28,11)+`<span class="tn">${p.name}</span>`:''}).join('<span style="color:var(--muted);font-size:12px">&amp;</span>')}</div>
     </div>`;
   };
 
-  const t1=teams[onCourt[0]], t2=teams[onCourt[1]];
-  const i1=onCourt[0], i2=onCourt[1];
-
-  let waitHtml='';
-  if(waiting!==null){
-    const wt=teams[waiting];
-    const ws=sitOuts[wt[0]]||0; // games sat out (both players same count)
-    waitHtml=`<div class="wait-block">
-      <div class="wait-label">⏳ Waiting (sat out ${ws} game${ws!==1?'s':''})</div>
-      <div class="tduo">${av(pById(wt[0]),26,10)}<span class="tn">${pById(wt[0]).name}</span>
-      <span style="color:var(--muted);font-size:12px">&amp;</span>
-      ${av(pById(wt[1]),26,10)}<span class="tn">${pById(wt[1]).name}</span></div>
+  let sitterHtml='';
+  if(sitter&&sitter.length){
+    const sGames=session.sitOuts[sitter[0]]||0;
+    sitterHtml=`<div class="wait-block">
+      <div class="wait-label">⏳ Sitting out (${sGames} game${sGames!==1?'s':''})</div>
+      <div class="tduo">${sitter.map(id=>{const p=pById(id);return p?av(p,26,10)+`<span class="tn">${p.name}</span>`:''}).join('<span style="color:var(--muted);font-size:12px">&amp;</span>')}</div>
     </div>`;
   }
 
   return`<div class="card">
-    <div class="card-title">⚽ Session in progress</div>
-    ${mkTeamBlock(t1,i1,true)}<div class="vs-line">VS</div>${mkTeamBlock(t2,i2,true)}
-    ${waitHtml}
-    <button class="btn" style="margin-top:12px" onclick="go('add')">Add next result</button>
+    <div class="card-title">⚽ Game ${gameNum} — session in progress</div>
+    ${mkTeamBlock(tw1,0)}<div class="vs-line">VS</div>${mkTeamBlock(tw2,1)}
+    ${sitterHtml}
+    <button class="btn" style="margin-top:12px" onclick="go('add')">Add result</button>
     <button class="btn-ghost" onclick="endSession()">End session &amp; new draw</button>
   </div>`;
 }
 
 function toggleSel(id){
+  if(!sel.has(id)&&sel.size>=7) return;
   sel.has(id)?sel.delete(id):sel.add(id);
   document.querySelectorAll('.pcheck').forEach((el,i)=>{el.classList.toggle('on',sel.has(S.players[i].id))});
   const n=sel.size;
   const sc=document.getElementById('sc');
-  if(sc) sc.textContent=n===4?'✅ 4 selected — 2 couples':n===6?'✅ 6 selected — 3 couples, one waits':`${n} selected — pick 4 or 6 players`;
+  if(sc) sc.textContent=drawHint(n);
   const btn=document.getElementById('dbtn');
-  if(btn) btn.disabled=!(n===4||n===6);
+  if(btn) btn.disabled=!(n>=4&&n<=7);
 }
 
 function doDraw(){
   const ids=[...sel].sort(()=>Math.random()-0.5);
-  const teams=[];
-  for(let i=0;i<Math.floor(ids.length/2);i++) teams.push([ids[i*2],ids[i*2+1]]);
+  const numTeams=Math.floor(ids.length/2);
+  const hasSoloSitter=ids.length%2===1;
 
-  const wins={};
-  teams.forEach(t=>{ wins[teamKey(t)]=0; });
+  // Build couples
+  const couples=[];
+  for(let i=0;i<numTeams;i++) couples.push([ids[i*2],ids[i*2+1]]);
+  const soloSitter=hasSoloSitter?[ids[ids.length-1]]:null;
+
+  // First two couples play; rest wait
+  // waiting = couples[2] if exists (for 6 or 7 players)
+  const waitingCouple=couples.length===3?couples[2]:null;
+
+  // sitter = soloSitter OR waitingCouple (whoever sits first)
+  // For 6p: waitingCouple sits, soloSitter=null
+  // For 7p: waitingCouple sits AND soloSitter sits
+  // For 5p: soloSitter sits, no waitingCouple
+  // For 4p: nobody sits
+
+  const sitter=[
+    ...(waitingCouple||[]),
+    ...(soloSitter||[])
+  ];
 
   const sitOuts={};
-  ids.forEach(id=>{ sitOuts[id]=0; });
+  ids.forEach(id=>{sitOuts[id]=0});
+  sitter.forEach(id=>{sitOuts[id]=1}); // they sit out game 1
+
+  const wins={};
+  wins[teamKey(couples[0])]=0;
+  wins[teamKey(couples[1])]=0;
 
   session={
-    id: S.sessionCount++,
-    date: new Date().toISOString().slice(0,10),
-    teams,
-    onCourt:[0,1],
-    waiting: teams.length===3 ? 2 : null,
+    phase:'play',
+    id:S.sessionCount++,
+    date:new Date().toISOString().slice(0,10),
+    tw1:couples[0],
+    tw2:couples[1],
+    sitter: sitter.length?sitter:null,
+    waitingCouple,
     wins,
     sitOuts,
-    gameNum:1
+    gameNum:1,
+    sessionId:S.sessionCount
   };
 
-  // If 3 teams: waiting team players start with 1 sit-out
-  if(teams.length===3){
-    teams[2].forEach(id=>{ session.sitOuts[id]=1; });
-  }
-
-  picked=null; partnerPick=null;
   save();
+  picked=null; partnerPick=null;
   go('add');
 }
 
@@ -339,29 +357,60 @@ function renderAdd(){
   if(!session){
     return`<div class="card">
       <div class="card-title">Add a result</div>
-      <div class="info-box ib" style="margin-bottom:14px">👆 Go to the <strong>Draw tab</strong> to start a new session first.</div>
+      <div class="info-box ib" style="margin-bottom:14px">👆 Go to the <strong>Draw tab</strong> to start a session first.</div>
       <button class="btn" onclick="go('draw')">Go to Draw</button>
     </div>`;
   }
 
-  const {teams, onCourt, waiting, wins, gameNum} = session;
-  const tw1=teams[onCourt[0]], tw2=teams[onCourt[1]];
-  const i1=onCourt[0], i2=onCourt[1];
+  // ── Pick partner phase ──
+  if(session.phase==='pickPartner'){
+    const {candidates,autoPartner,sitterIds,winnerTeam}=session;
+    const pA=pById(candidates[0]),pB=pById(candidates[1]);
+    const sitterNames=teamLabel(sitterIds);
+    const paon=partnerPick===candidates[0]?' on':'';
+    const pbon=partnerPick===candidates[1]?' on':'';
+    const isAuto=autoPartner!==null;
+
+    return`<div class="form">
+      <div class="info-box io">
+        ${isAuto
+          ? `⏳ <strong>${pById(autoPartner).name}</strong> sat out the most — they partner <strong>${sitterNames}</strong>`
+          : `🎲 Both players sat out equally — draw to decide who partners <strong>${sitterNames}</strong>`}
+      </div>
+      <div>
+        <div class="fl">Who partners <strong>${sitterNames}</strong>?</div>
+        <div class="pick-opts">
+          <div class="dopt${paon}" onclick="pickPartner(${candidates[0]})">
+            <div class="dopt-name">${pA.name}</div>
+            <div class="dopt-sub">from losing team</div>
+          </div>
+          <div class="dopt${pbon}" onclick="pickPartner(${candidates[1]})">
+            <div class="dopt-name">${pB.name}</div>
+            <div class="dopt-sub">from losing team</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn" id="savebtn" onclick="confirmPartner()" ${partnerPick!==null?'':'disabled'}>Confirm lineup</button>
+    </div>`;
+  }
+
+  // ── Play phase ──
+  const {tw1,tw2,wins,gameNum}=session;
   const w1=wins[teamKey(tw1)]||0, w2=wins[teamKey(tw2)]||0;
   const w1on=picked==='t1'?' on':'', w2on=picked==='t2'?' on':'';
 
   return`<div class="form">
-    <div class="info-box ig">Game ${gameNum} · First to ${WINS_TO_CHAMP} wins the session</div>
+    <div class="info-box ig">Game ${gameNum} &nbsp;·&nbsp; First to ${WINS_TO_CHAMP} wins the session</div>
     <div>
       <div class="fl">Who won?<small>Tap the winning couple</small></div>
       <div class="win-opts">
         <div class="wopt${w1on}" onclick="pickWin('t1')">
-          <div class="wopt-tag">TEAM ${i1+1}</div>
+          <div class="wopt-tag">TEAM 1</div>
           <div class="wopt-names">${tw1.map(id=>{const p=pById(id);return p?`<div>${p.name}</div>`:''}).join('')}</div>
           <div class="wopt-wins">${pips(w1)} ${w1} win${w1!==1?'s':''}</div>
         </div>
         <div class="wopt${w2on}" onclick="pickWin('t2')">
-          <div class="wopt-tag">TEAM ${i2+1}</div>
+          <div class="wopt-tag">TEAM 2</div>
           <div class="wopt-names">${tw2.map(id=>{const p=pById(id);return p?`<div>${p.name}</div>`:''}).join('')}</div>
           <div class="wopt-wins">${pips(w2)} ${w2} win${w2!==1?'s':''}</div>
         </div>
@@ -383,19 +432,14 @@ function pickWin(w){
 function doSave(){
   if(!picked||!session) return;
   const date=document.getElementById('dt').value||session.date;
-  const {teams, onCourt, waiting} = session;
-  const tw1=teams[onCourt[0]], tw2=teams[onCourt[1]];
+  const {tw1,tw2,sitter}=session;
 
-  // Save match
-  S.matches.push({id:S.nid++, tw1, tw2, winner:picked, date, gameNum:session.gameNum, sessionId:session.id});
+  S.matches.push({id:S.nid++,tw1,tw2,winner:picked,date,gameNum:session.gameNum,sessionId:session.id});
   save();
 
-  const winnerIdx = picked==='t1'?onCourt[0]:onCourt[1];
-  const loserIdx  = picked==='t1'?onCourt[1]:onCourt[0];
-  const winnerTeam=teams[winnerIdx];
-  const loserTeam =teams[loserIdx];
+  const winnerTeam=picked==='t1'?tw1:tw2;
+  const loserTeam =picked==='t1'?tw2:tw1;
 
-  // Update session wins
   session.wins[teamKey(winnerTeam)]=(session.wins[teamKey(winnerTeam)]||0)+1;
   const newWins=session.wins[teamKey(winnerTeam)];
 
@@ -405,99 +449,135 @@ function doSave(){
   setTimeout(()=>{
     sv.style.display='none';
 
-    // Check if this team has won the session
-    if(newWins>=WINS_TO_CHAMP){
-      showChampion(winnerTeam);
+    if(newWins>=WINS_TO_CHAMP){ showChampion(winnerTeam); return; }
+
+    session.gameNum++;
+
+    if(!sitter||!sitter.length){
+      // 4 players: no sitter, same two teams keep playing
+      picked=null; render(); go('add');
       return;
     }
 
-    // Rotate: loser goes off, waiting comes on (if exists)
-    session.gameNum++;
-
-    if(waiting!==null){
-      // 3-team rotation: loser goes to wait, waiting comes on to play winner
-      const newWaiting=loserIdx;
-      loserTeam.forEach(id=>{ session.sitOuts[id]=(session.sitOuts[id]||0)+1; });
-      session.onCourt=[winnerIdx, waiting];
-      session.waiting=newWaiting;
+    // There's a sitter (solo or couple)
+    // Sitter comes in, loser goes out — but we need to form a new couple from sitter+one loser
+    // if sitter is already a couple (2 people), they play as-is against winner
+    if(sitter.length===2){
+      // Sitter couple comes on vs winner; loser couple sits out entirely
+      loserTeam.forEach(id=>{session.sitOuts[id]=(session.sitOuts[id]||0)+1});
+      // Register wins for new team key
+      const newSitterKey=teamKey(sitter);
+      if(!session.wins[newSitterKey]) session.wins[newSitterKey]=0;
+      session.tw1=winnerTeam;
+      session.tw2=[...sitter];
+      session.sitter=[...loserTeam];
+      picked=null; render(); go('add');
+      return;
     }
-    // 2-team: winner stays, loser stays — same teams, just keep playing
-    // (onCourt doesn't change for 2 teams)
 
-    picked=null;
-    render();
-    go('add');
+    // Sitter is 1 person — needs to pair with one loser
+    // Loser team has 2 players; one partners sitter, one sits out
+    const sitterId=sitter[0];
+    const sitCount=session.sitOuts[sitterId]||0;
+    const [loserA,loserB]=loserTeam;
+    const soA=session.sitOuts[loserA]||0;
+    const soB=session.sitOuts[loserB]||0;
+
+    // Priority: whoever sat out MORE gets to play
+    // If equal: show draw screen
+    let autoPartner=null;
+    if(soA>soB) autoPartner=loserA;
+    else if(soB>soA) autoPartner=loserB;
+    // else null → draw needed
+
+    session.phase='pickPartner';
+    session.winnerTeam=winnerTeam;
+    session.loserTeam=loserTeam;
+    session.sitterIds=[sitterId];
+    session.candidates=[loserA,loserB];
+    session.autoPartner=autoPartner;
+    partnerPick=autoPartner; // pre-select if clear
+    render(); go('add');
   },900);
+}
+
+function pickPartner(id){
+  partnerPick=id;
+  document.querySelectorAll('.dopt').forEach((el,i)=>{el.classList.toggle('on',session.candidates[i]===id)});
+  const btn=document.getElementById('savebtn');
+  if(btn) btn.disabled=false;
+}
+
+function confirmPartner(){
+  if(!partnerPick||!session) return;
+  const {winnerTeam,sitterIds,loserTeam}=session;
+  const partnerId=partnerPick;
+  const sitterId=sitterIds[0];
+  const newTeam=[sitterId,partnerId];
+  const newSitter=[loserTeam.find(id=>id!==partnerId)];
+
+  // Update sit-outs for the new sitter
+  newSitter.forEach(id=>{session.sitOuts[id]=(session.sitOuts[id]||0)+1});
+  // Also update sitter who was sitting
+  sitterIds.forEach(id=>{// they're now playing, no change needed});
+
+  const newKey=teamKey(newTeam);
+  if(!session.wins[newKey]) session.wins[newKey]=0;
+
+  session.phase='play';
+  session.tw1=winnerTeam;
+  session.tw2=newTeam;
+  session.sitter=newSitter;
+  session.winnerTeam=null;
+  session.loserTeam=null;
+  session.sitterIds=null;
+  session.candidates=null;
+  session.autoPartner=null;
+  partnerPick=null; picked=null;
+  render(); go('add');
 }
 
 function showChampion(winnerTeam){
   const names=teamLabel(winnerTeam);
   const wins=session.wins[teamKey(winnerTeam)];
-
-  // Show champion screen in add tab
   document.getElementById('add').innerHTML=`
     <div class="champ-banner">
       <span class="crown">🏆</span>
       <h2>${names}</h2>
-      <p>Session champions with ${wins} wins!</p>
+      <p>Session champions · ${wins} wins in a row!</p>
     </div>
-    <div style="margin-top:16px">
-      <button class="btn" onclick="newDraw()">🔀 New draw</button>
-    </div>`;
-
-  // Also store session champion in matches (no extra match, just note)
+    <button class="btn" onclick="newDraw()">🔀 New draw</button>`;
   session=null; sel=new Set(); picked=null; partnerPick=null;
-  save();
-
-  // Update badge
-  S.sessionCount = (S.sessionCount||1)+1;
+  S.sessionCount++;
   save();
 }
 
-function newDraw(){
-  session=null; sel=new Set(); picked=null; partnerPick=null;
-  go('draw');
-}
+function newDraw(){ session=null; sel=new Set(); picked=null; partnerPick=null; go('draw'); }
 
 // ── RESULTS ──
 function renderResults(){
   if(!S.matches.length) return`<div class="empty"><p>⚽</p><p>No matches yet</p></div>`;
-
-  // Group by sessionId
   const bySession={};
   [...S.matches].sort((a,b)=>a.id-b.id).forEach(m=>{
     const sid=m.sessionId||0;
     if(!bySession[sid]) bySession[sid]=[];
     bySession[sid].push(m);
   });
-
-  const sessionIds=Object.keys(bySession).sort((a,b)=>b-a);
-  return sessionIds.map(sid=>{
+  return Object.keys(bySession).sort((a,b)=>b-a).map(sid=>{
     const ms=bySession[sid];
-    const dateStr=new Date(ms[0].date+'T12:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-
-    // Find session champion (team with 3 wins)
+    const ds=new Date(ms[0].date+'T12:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     const winCount={};
-    ms.forEach(m=>{
-      const wt=m.winner==='t1'?m.tw1:m.tw2;
-      const k=teamKey(wt);
-      winCount[k]=(winCount[k]||0)+1;
-    });
+    ms.forEach(m=>{const k=teamKey(m.winner==='t1'?m.tw1:m.tw2);winCount[k]=(winCount[k]||0)+1});
     const champKey=Object.keys(winCount).find(k=>winCount[k]>=WINS_TO_CHAMP);
     let champHtml='';
     if(champKey){
-      const champIds=champKey.split(',').map(Number);
-      champHtml=`<div class="session-champ">
-        <span class="crown">🏆</span>
-        <div class="title">${teamLabel(champIds)}</div>
-        <div class="sub">Session ${sid} champions · ${winCount[champKey]} wins</div>
-      </div>`;
+      const ids=champKey.split(',').map(Number);
+      champHtml=`<div class="session-champ"><span class="crown">🏆</span><div class="title">${teamLabel(ids)}</div><div class="sub">Session ${sid} champions</div></div>`;
     }
-
-    const matchRows=ms.map(m=>{
+    const rows=ms.map(m=>{
       const t1w=m.winner==='t1';
       return`<div class="rc">
-        <div class="rc-date">Game ${m.gameNum||'?'} · ${dateStr} <span class="rc-tag">Session ${sid}</span></div>
+        <div class="rc-date">Game ${m.gameNum} &nbsp;<span class="rc-tag">Session ${sid} · ${ds}</span></div>
         <div class="rc-match">
           <div class="rc-side"><div class="rc-tname">${teamLabel(m.tw1)}</div></div>
           <div class="rc-center">
@@ -509,8 +589,7 @@ function renderResults(){
         </div>
       </div>`;
     }).join('');
-
-    return champHtml+matchRows;
+    return champHtml+rows;
   }).join('');
 }
 
@@ -520,13 +599,12 @@ function go(t){
   document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['standings','draw','results','add'][i]===t)});
   render();
 }
-
 function render(){
   const fn={standings:renderStandings,draw:renderDraw,results:renderResults,add:renderAdd};
   document.getElementById(tab).innerHTML=fn[tab]();
   document.getElementById('sub').textContent=`${S.players.length} players · ${S.matches.length} matches`;
-  const badge=document.getElementById('session-badge');
-  if(badge) badge.textContent=session?`Session ${session.id}`:`Season 1`;
+  const b=document.getElementById('session-badge');
+  if(b) b.textContent=session?`Session ${session.id}`:'Season 1';
 }
 
 load(); render();
